@@ -1,4 +1,24 @@
 import React, { useState } from 'react';
+import { freemarker } from 'freemarker';
+import { Html5Entities } from 'html-entities';
+
+function applyTransformation(inputData, transformationData) {
+  return new Promise((resolve, reject) => {
+    freemarker.render(
+      transformationData,
+      inputData,
+      (error, transformedOutput) => {
+        if (error) {
+          reject(error);
+        } else {
+          const entities = new Html5Entities();
+          const decodedOutput = entities.decode(transformedOutput);
+          resolve(decodedOutput);
+        }
+      }
+    );
+  });
+}
 
 function App() {
   const [inputData, setInputData] = useState('');
@@ -14,72 +34,39 @@ function App() {
   };
 
   const handleGenerateOutput = () => {
-    try {
-      // Perform Jolt transformation on the input data
-      applyTransformation(inputData, transformationData).then(
-        (transformedData) => setOutputData(transformedData)
-      );
-
-      // Update the state with the transformed output data
-    } catch (error) {
-      // Handle any error that occurred during the transformation
-      console.error('Error applying transformation:', error);
-    }
-  };
-
-  const freemarker = require('freemarker');
-
-  // Function to perform FreeMarker transformation
-  function applyTransformation(inputData, transformationData) {
-    return new Promise((resolve, reject) => {
-      // Create a FreeMarker engine instance
-      const fm = new freemarker();
-
-      // Configure the FreeMarker engine
-      fm.configure({});
-
-      // Compile the transformation template
-      const template = fm.compile(transformationData);
-
-      // Create the data model object
-      const dataModel = {
-        body: inputData,
-      };
-
-      // Execute the transformation
-      template.process(dataModel, (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
-        }
+    // Perform Jolt transformation on the input data
+    applyTransformation(inputData, transformationData)
+      .then((transformedData) => {
+        // Update the state with the transformed output data
+        setOutputData(transformedData);
+      })
+      .catch((error) => {
+        // Handle any error that occurred during the transformation
+        console.error('Error applying transformation:', error);
       });
-    });
-  }
-
-  module.exports = applyTransformation;
+  };
 
   return (
     <div>
-      <h1>iHub Transformation</h1>
+      <h1>FreeMarker Transformation</h1>
       <div>
-        <h2>Input Data</h2>
+        <h2>Input Data (JSON Model)</h2>
         <textarea
           value={inputData}
           onChange={handleInputChange}
           rows={10}
           cols={50}
-          placeholder="Enter JSON data model..."
+          placeholder="Enter JSON model..."
         />
       </div>
       <div>
-        <h2>Transformation Data</h2>
+        <h2>Transformation Data (FreeMarker Spec Template)</h2>
         <textarea
           value={transformationData}
           onChange={handleTransformationChange}
           rows={10}
           cols={50}
-          placeholder="Enter FreeMarker transformation spec..."
+          placeholder="Enter FreeMarker spec template..."
         />
       </div>
       <div>
@@ -94,5 +81,4 @@ function App() {
     </div>
   );
 }
-
 export default App;
